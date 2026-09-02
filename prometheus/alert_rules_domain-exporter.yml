@@ -1,0 +1,51 @@
+---
+groups:
+  - name: domain
+    rules:
+      - alert: DomainExpiringLessThen30Days
+        expr: >
+          max_over_time(domain_expiry_days[75m]) != -1
+          AND max_over_time(domain_expiry_days[75m]) < 30
+          AND max_over_time(domain_expiry_days[75m]) > 5
+        for: 24h
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ .domain }}: domain is expiring'
+          description: 'Domain {{ .domain }} will expire in less than 30 days'
+          description_short: "Осталось {{  | humanize }} дней"
+          value: "{{  }}"
+
+      - alert: DomainExpiringLessThen5Days
+        expr: >
+          max_over_time(domain_expiry_days[75m]) != -1
+          AND max_over_time(domain_expiry_days[75m]) <= 5
+        for: 1h
+        labels:
+          severity: critical
+        annotations:
+          summary: '{{ .domain }}: domain is expiring'
+          description: 'Domain {{ .domain }} will expire in less than 5 days'
+          description_short: "Осталось {{  | humanize }} дней ( ахтунг )"
+          value: "{{  }}"
+
+      - alert: DomainProbeFailure
+        expr: max_over_time(domain_probe_success[75m]) == 0
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: '{{ .domain }}: cannot probe'
+          description: 'Domain {{ .domain }} is not valid. Cannot probe'
+          description_short: "Domain {{ .domain }} is not valid. Cannot probe"
+          value: "{{  }}"
+
+      - alert: DomainProbeMissing
+        expr: absent_over_time(domain_probe_success[3h])
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: '{{ .domain }}: no probe data'
+          description: 'No domain_probe_success samples for {{ .domain }} in the last 3h — exporter or scrape may be broken'
+          description_short: "Нет данных по домену за последние 3 часа"
